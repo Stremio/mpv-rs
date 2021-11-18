@@ -17,11 +17,12 @@ use std::ops::{Deref,DerefMut};
 ///
 /// Almost every function from the libmpv API needs a context, which is stored in this struct.
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MpvHandler {
-    handle: *mut mpv_handle,
+    pub handle: *mut mpv_handle,
 }
-
+unsafe impl Send for MpvHandler {}
+unsafe impl Sync for MpvHandler {}
 
 ///
 /// This struct is a decorator of `MpvHandler`, and can use all the functions from `MpvHandler`.
