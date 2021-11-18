@@ -53,13 +53,12 @@ impl MpvHandlerBuilder {
     /// situations :
     ///         - out of memory
     ///         - LC_NUMERIC is not set to "C" (see general remarks)
-    #[must_use]
     pub fn new() -> Result<Self> {
         let handle = unsafe { mpv_create() };
-        if handle == ptr::null_mut() {
+        if handle.is_null() {
             return Err(Error::MPV_ERROR_NOMEM);
         }
-        ret_to_result(0,MpvHandlerBuilder { handle:     handle })
+        ret_to_result(0,MpvHandlerBuilder { handle })
     }
 
     ///
@@ -78,8 +77,9 @@ impl MpvHandlerBuilder {
         let format = T::get_mpv_format();
         option.call_as_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let name = ffi::CString::new(property).unwrap();
                 mpv_set_option(self.handle,
-                               ffi::CString::new(property).unwrap().as_ptr(),
+                    name.as_ptr(),
                                format,
                                ptr)
             }
@@ -99,7 +99,6 @@ impl MpvHandlerBuilder {
     /// Note that it returns a Box of MpvHandler because it needs to be allocated on the heap;
     /// The Rust MpvHandler gives its own pointer the the C mpv API, and moving the MpvHandler
     /// within the stack is forbidden in that case.
-    #[must_use]
     pub fn build(self) -> Result<MpvHandler> {
         let ret = unsafe { mpv_initialize(self.handle) };
 
@@ -123,7 +122,6 @@ impl MpvHandlerBuilder {
     ///                          (or required extensions are missing)
     ///
     /// For additional information, see examples/sdl2.rs for a basic implementation with a sdl2 opengl context
-    #[must_use]
     pub fn build_with_gl(mut self,
                          get_proc_address: mpv_opengl_cb_get_proc_address_fn,
                          get_proc_address_ctx: *mut ::std::os::raw::c_void) -> Result<Box<MpvHandlerWithGl>> {
@@ -142,7 +140,7 @@ impl MpvHandlerBuilder {
                 // Otherwise, mpv will create a separate platform window.
 
                 let mut mpv_handler_with_gl = Box::new(MpvHandlerWithGl {
-                    mpv_handler:      mpv_handler,
+                    mpv_handler,
                     gl_context:       opengl_ctx,
                     update_available: AtomicBool::new(false)
                 });
@@ -227,8 +225,9 @@ impl MpvHandler {
         let format = T::get_mpv_format();
         value.call_as_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let name = ffi::CString::new(property).unwrap();
                 mpv_set_property(self.handle,
-                                 ffi::CString::new(property).unwrap().as_ptr(),
+                                 name.as_ptr(),
                                  format,
                                  ptr)
             }
@@ -244,9 +243,10 @@ impl MpvHandler {
         let format = T::get_mpv_format();
         value.call_as_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let name = ffi::CString::new(property).unwrap();
                 mpv_set_property_async(self.handle,
                                        userdata,
-                                       ffi::CString::new(property).unwrap().as_ptr(),
+                                       name.as_ptr(),
                                        format,
                                        ptr)
             }
@@ -261,8 +261,9 @@ impl MpvHandler {
         let format = T::get_mpv_format();
         let result = T::get_from_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let name = ffi::CString::new(property).unwrap();
                 mpv_get_property(self.handle,
-                                 ffi::CString::new(property).unwrap().as_ptr(),
+                                 name.as_ptr(),
                                  format,
                                  ptr)
             }
@@ -275,9 +276,10 @@ impl MpvHandler {
     pub fn get_property_async<T : MpvFormat>(&self, property: &str, userdata :u32) -> Result<()> {
         let userdata = userdata as ::std::os::raw::c_ulong;
         let ret = unsafe {
+            let name = ffi::CString::new(property).unwrap();
             mpv_get_property_async(self.handle,
                                    userdata,
-                                   ffi::CString::new(property).unwrap().as_ptr(),
+                                   name.as_ptr(),
                                    T::get_mpv_format())
         };
         ret_to_result(ret,())
@@ -299,8 +301,9 @@ impl MpvHandler {
         let format = T::get_mpv_format();
         option.call_as_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let name = ffi::CString::new(property).unwrap();
                 mpv_set_option(self.handle,
-                                 ffi::CString::new(property).unwrap().as_ptr(),
+                                 name.as_ptr(),
                                  format,
                                  ptr)
             }
@@ -366,9 +369,10 @@ impl MpvHandler {
     pub fn observe_property<T:MpvFormat>(&mut self,name:&str,userdata:u32) -> Result<()>{
         let userdata = userdata as ::std::os::raw::c_ulong;
         let ret = unsafe {
+            let name = ffi::CString::new(name).unwrap();
             mpv_observe_property(self.handle,
                                  userdata,
-                                 ffi::CString::new(name).unwrap().as_ptr(),
+                                 name.as_ptr(),
                                  T::get_mpv_format())
         };
         ret_to_result(ret,())

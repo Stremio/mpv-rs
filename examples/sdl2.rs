@@ -5,7 +5,6 @@ extern crate sdl2_sys;
 extern crate log;
 
 use std::env;
-use std::path::Path;
 use std::os::raw::{c_void,c_char};
 use std::ffi::CStr;
 
@@ -60,7 +59,7 @@ fn sdl_example(video_path: &str) {
                 .unwrap();
         let ptr = &mut video_subsystem as *mut _ as *mut c_void;
         let mut mpv_builder = mpv::MpvHandlerBuilder::new().expect("Error while creating MPV builder");
-        mpv_builder.try_hardware_decoding();
+        mpv_builder.try_hardware_decoding().ok();
         let mut mpv : Box<mpv::MpvHandlerWithGl> = mpv_builder.build_with_gl(Some(get_proc_address), ptr).expect("Error while initializing MPV with opengl");
         // observe the property "pause" with userdata 5.
         // When we will pause later, an event PropertyChange will be sent with userdata 5
